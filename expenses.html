@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f172a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Expenses</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230f172a'/%3E%3Ctext x='50' y='66' font-size='56' text-anchor='middle' fill='%23f8fafc' font-family='system-ui'%3E%C2%A3%3C/text%3E%3C/svg%3E" />
+<style>
+  :root {
+    --bg: #0f172a;
+    --bg-2: #111c33;
+    --surface: #1a2542;
+    --surface-2: #243057;
+    --border: #2c3a66;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --accent: #f59e0b;
+    --accent-2: #fbbf24;
+    --good: #10b981;
+    --bad: #ef4444;
+    --radius: 14px;
+    --pad: 16px;
+    --shadow: 0 6px 24px rgba(0,0,0,0.25);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+    min-height: 100vh;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .app {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 18px var(--pad) 96px;
+  }
+  header.top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  header.top h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  header.top .subtle {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .icon-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .icon-btn:hover { background: var(--surface-2); }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    background: var(--surface);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    margin-bottom: 18px;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px 12px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+    user-select: none;
+    transition: 0.15s;
+  }
+  .tab.active {
+    background: var(--bg);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 {
+    font-size: 15px;
+    margin: 0 0 14px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+
+  /* Form */
+  label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 12px 0 6px;
+    font-weight: 500;
+  }
+  input, select, textarea {
+    width: 100%;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 16px;
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+  }
+  textarea { min-height: 64px; resize: vertical; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  .amount-input {
+    position: relative;
+  }
+  .amount-input::before {
+    content: "£";
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .amount-input input {
+    padding-left: 28px;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  /* Receipt picker */
+  .receipt-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+    color: var(--muted);
+    cursor: pointer;
+    background: var(--bg-2);
+    font-size: 13px;
+    transition: 0.15s;
+  }
+  .receipt-zone:hover { border-color: var(--accent); color: var(--text); }
+  .receipt-zone input { display: none; }
+  .receipt-preview {
+    margin-top: 10px;
+    display: none;
+  }
+  .receipt-preview img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    border-radius: 10px;
+  }
+  .receipt-preview .clear {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--bad);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+
+  /* Submit */
+  .submit-btn {
+    margin-top: 16px;
+    width: 100%;
+    background: var(--accent);
+    color: #1a1206;
+    border: none;
+    border-radius: 11px;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.15s;
+  }
+  .submit-btn:hover { background: var(--accent-2); }
+  .submit-btn:disabled {
+    background: var(--surface-2);
+    color: var(--muted);
+    cursor: not-allowed;
+  }
+
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .stat .label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .stat .value {
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .stat .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* List */
+  .filter-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .filter-row select { flex: 1; padding: 10px 14px; font-size: 14px; }
+  .expense-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .expense-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .expense-item .cat-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .expense-item .meta {
+    flex: 1;
+    min-width: 0;
+  }
+  .expense-item .meta .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .expense-item .cat-name {
+    font-weight: 600;
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .expense-item .amt {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+  .expense-item .note {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .expense-item .date {
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .expense-item .receipt-link {
+    color: var(--accent);
+    font-size: 12px;
+    text-decoration: none;
+    margin-left: 6px;
+  }
+  .expense-item .del {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px 6px;
+    font-size: 16px;
+    border-radius: 6px;
+  }
+  .expense-item .del:hover { color: var(--bad); background: var(--bg-2); }
+
+  /* Settings */
+  .help {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 6px 0 0;
+    line-height: 1.5;
+  }
+  .help code {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .ghost-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 12px;
+    width: 100%;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  .ghost-btn:hover { background: var(--surface-2); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.25s;
+    z-index: 100;
+    max-width: 90%;
+  }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  .toast.bad { border-color: var(--bad); }
+  .toast.good { border-color: var(--good); }
+
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 30px 16px;
+    font-size: 14px;
+  }
+
+  .pending-pill {
+    display: inline-block;
+    font-size: 10px;
+    background: var(--accent);
+    color: #1a1206;
+    padding: 1px 7px;
+    border-radius: 999px;
+    margin-left: 6px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+  }
+
+  @media (min-width: 720px) {
+    .app { padding-top: 32px; }
+    header.top h1 { font-size: 26px; }
+    .stats { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div>
+      <h1>Expenses</h1>
+      <div class="subtle" id="status-line">Loading…</div>
+    </div>
+    <button class="icon-btn" id="refresh-btn" title="Refresh">↻</button>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="add">Add</div>
+    <div class="tab" data-tab="list">History</div>
+    <div class="tab" data-tab="settings">Settings</div>
+  </div>
+
+  <!-- ADD TAB -->
+  <section class="tab-pane" data-pane="add">
+    <div class="card">
+      <h2>New Expense</h2>
+      <form id="expense-form" autocomplete="off">
+        <label for="amount">Amount</label>
+        <div class="amount-input">
+          <input type="number" inputmode="decimal" step="0.01" min="0" id="amount" required placeholder="0.00" />
+        </div>
+
+        <label for="category">Category</label>
+        <select id="category" required>
+          <option value="Food & Drink">🍽️ Food & Drink</option>
+          <option value="Transport">🚗 Transport</option>
+          <option value="Groceries">🛒 Groceries</option>
+          <option value="Bills & Utilities">⚡ Bills & Utilities</option>
+          <option value="Shopping">🛍️ Shopping</option>
+          <option value="Entertainment">🎬 Entertainment</option>
+          <option value="Travel">✈️ Travel</option>
+          <option value="Health">⚕️ Health</option>
+          <option value="Business">💼 Business</option>
+          <option value="Other">• Other</option>
+        </select>
+
+        <div class="row">
+          <div>
+            <label for="date">Date</label>
+            <input type="date" id="date" required />
+          </div>
+        </div>
+
+        <label for="note">Note (optional)</label>
+        <input type="text" id="note" placeholder="e.g. Lunch with Jamie" maxlength="200" />
+
+        <label>Receipt (optional)</label>
+        <label class="receipt-zone" for="receipt">
+          <span id="receipt-prompt">📷 Tap to add a receipt photo</span>
+          <input type="file" id="receipt" accept="image/*" capture="environment" />
+        </label>
+        <div class="receipt-preview" id="receipt-preview">
+          <img id="receipt-img" alt="Receipt preview" />
+          <button type="button" class="clear" id="receipt-clear">Remove</button>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submit-btn">Save expense</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- LIST TAB -->
+  <section class="tab-pane" data-pane="list" hidden>
+    <div class="stats">
+      <div class="stat"><div class="label">This month</div><div class="value" id="stat-month">£0</div><div class="sub" id="stat-month-count">0 entries</div></div>
+      <div class="stat"><div class="label">Today</div><div class="value" id="stat-today">£0</div><div class="sub" id="stat-today-count">0 entries</div></div>
+      <div class="stat"><div class="label">This year</div><div class="value" id="stat-year">£0</div><div class="sub" id="stat-year-count">0 entries</div></div>
+      <div class="stat"><div class="label">All time</div><div class="value" id="stat-all">£0</div><div class="sub" id="stat-all-count">0 entries</div></div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h2>History</h2>
+      <div class="filter-row">
+        <select id="filter-category">
+          <option value="">All categories</option>
+        </select>
+        <select id="filter-period">
+          <option value="all">All time</option>
+          <option value="today">Today</option>
+          <option value="week">This week</option>
+          <option value="month" selected>This month</option>
+          <option value="year">This year</option>
+        </select>
+      </div>
+      <div class="expense-list" id="expense-list">
+        <div class="empty">No expenses yet.</div>
+      </div>
+      <button class="ghost-btn" id="export-btn">⬇ Export to CSV</button>
+    </div>
+  </section>
+
+  <!-- SETTINGS TAB -->
+  <section class="tab-pane" data-pane="settings" hidden>
+    <div class="card">
+      <h2>Backend</h2>
+      <label for="endpoint">Apps Script web app URL</label>
+      <input type="url" id="endpoint" placeholder="https://script.google.com/macros/s/.../exec" />
+      <p class="help">Paste the URL you got after deploying the Apps Script. See <code>SETUP.md</code> for the 5-minute setup guide.</p>
+      <button type="button" class="ghost-btn" id="save-endpoint">Save & test connection</button>
+      <button type="button" class="ghost-btn" id="clear-cache">Clear local cache</button>
+    </div>
+    <div class="card">
+      <h2>Install</h2>
+      <p class="help"><strong>iPhone:</strong> Tap Share → "Add to Home Screen" to use this like a native app.<br>
+      <strong>Desktop (Chrome / Edge):</strong> click the install icon in the address bar, or use the browser's "Install app" menu.</p>
+    </div>
+    <div class="card">
+      <h2>About</h2>
+      <p class="help">Single-file expenses app. Data lives in your Google Sheet — this app is just a friendly front door. Works offline: entries queue locally and sync when you're back online.</p>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  // ---------- State ----------
+  const LS_ENDPOINT = "expenses.endpoint";
+  const LS_QUEUE = "expenses.pendingQueue";
+  const LS_CACHE = "expenses.cache";
+
+  let endpoint = localStorage.getItem(LS_ENDPOINT) || "";
+  let expenses = [];   // server expenses
+  let pending = JSON.parse(localStorage.getItem(LS_QUEUE) || "[]"); // queued offline
+  let receiptDataUrl = null;
+
+  const CATEGORY_ICONS = {
+    "Food & Drink": "🍽️",
+    "Transport": "🚗",
+    "Groceries": "🛒",
+    "Bills & Utilities": "⚡",
+    "Shopping": "🛍️",
+    "Entertainment": "🎬",
+    "Travel": "✈️",
+    "Health": "⚕️",
+    "Business": "💼",
+    "Other": "•"
+  };
+
+  // ---------- Helpers ----------
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => "£" + (Number(n) || 0).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtShort = (n) => {
+    const v = Number(n) || 0;
+    if (Math.abs(v) >= 1000) return "£" + (v/1000).toFixed(1) + "k";
+    return "£" + v.toFixed(2);
+  };
+  const todayStr = () => {
+    const d = new Date();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    return `${d.getFullYear()}-${m}-${day}`;
+  };
+  const startOfDay = (d) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+
+  function toast(msg, kind="") {
+    const t = $("toast");
+    t.textContent = msg;
+    t.className = "toast show " + kind;
+    clearTimeout(window.__toastT);
+    window.__toastT = setTimeout(() => t.classList.remove("show"), 2800);
+  }
+
+  function setStatusLine() {
+    const sl = $("status-line");
+    if (!endpoint) { sl.textContent = "⚙ Not connected — set up in Settings"; return; }
+    const pendCount = pending.length;
+    if (pendCount > 0) sl.textContent = `${pendCount} pending — syncing…`;
+    else sl.textContent = `${expenses.length} entries · synced`;
+  }
+
+  // ---------- Tabs ----------
+  document.querySelectorAll(".tab").forEach(t => {
+    t.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+      t.classList.add("active");
+      const target = t.dataset.tab;
+      document.querySelectorAll(".tab-pane").forEach(p => p.hidden = p.dataset.pane !== target);
+      if (target === "list") render();
+    });
+  });
+
+  // ---------- Receipt ----------
+  $("receipt").addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const dataUrl = await fileToCompressedDataUrl(f, 1400, 0.78);
+    receiptDataUrl = dataUrl;
+    $("receipt-img").src = dataUrl;
+    $("receipt-preview").style.display = "block";
+    $("receipt-prompt").textContent = "✓ Receipt attached — tap to replace";
+  });
+  $("receipt-clear").addEventListener("click", () => {
+    receiptDataUrl = null;
+    $("receipt").value = "";
+    $("receipt-preview").style.display = "none";
+    $("receipt-prompt").textContent = "📷 Tap to add a receipt photo";
+  });
+
+  function fileToCompressedDataUrl(file, maxDim, quality) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            const s = Math.min(maxDim / width, maxDim / height);
+            width = Math.round(width * s);
+            height = Math.round(height * s);
+          }
+          const c = document.createElement("canvas");
+          c.width = width; c.height = height;
+          c.getContext("2d").drawImage(img, 0, 0, width, height);
+          resolve(c.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = reject;
+        img.src = reader.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ---------- Form ----------
+  $("date").value = todayStr();
+
+  $("expense-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const amount = parseFloat($("amount").value);
+    if (!amount || amount <= 0) { toast("Enter a valid amount", "bad"); return; }
+    const entry = {
+      id: "local-" + Date.now() + "-" + Math.random().toString(36).slice(2,7),
+      amount,
+      category: $("category").value,
+      date: $("date").value,
+      note: $("note").value.trim(),
+      receiptDataUrl: receiptDataUrl,
+      createdAt: new Date().toISOString()
+    };
+    pending.push(entry);
+    saveQueue();
+    setStatusLine();
+    resetForm();
+    toast("Saved · syncing…", "good");
+    syncPending();
+  });
+
+  function resetForm() {
+    $("amount").value = "";
+    $("note").value = "";
+    $("date").value = todayStr();
+    $("receipt-clear").click();
+  }
+
+  // ---------- Sync ----------
+  function saveQueue() { localStorage.setItem(LS_QUEUE, JSON.stringify(pending)); }
+  function saveCache() { localStorage.setItem(LS_CACHE, JSON.stringify(expenses)); }
+
+  async function syncPending() {
+    if (!endpoint || pending.length === 0) return;
+    setStatusLine();
+    // Process oldest first; on failure, leave it in queue
+    while (pending.length > 0) {
+      const item = pending[0];
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" }, // avoid CORS preflight
+          body: JSON.stringify({ action: "add", entry: item })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "Server error");
+        pending.shift();
+        saveQueue();
+      } catch (err) {
+        console.warn("Sync failed:", err);
+        toast("Offline — will retry when reconnected", "bad");
+        setStatusLine();
+        return;
+      }
+    }
+    setStatusLine();
+    await refresh();
+  }
+
+  async function refresh() {
+    if (!endpoint) {
+      expenses = JSON.parse(localStorage.getItem(LS_CACHE) || "[]");
+      render();
+      setStatusLine();
+      return;
+    }
+    try {
+      const res = await fetch(endpoint + "?action=list", { method: "GET" });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Server error");
+      expenses = data.expenses || [];
+      saveCache();
+    } catch (err) {
+      console.warn("Refresh failed:", err);
+      expenses = JSON.parse(localStorage.getItem(LS_CACHE) || "[]");
+      toast("Couldn't refresh — showing cached data", "bad");
+    }
+    render();
+    setStatusLine();
+  }
+
+  async function deleteExpense(id) {
+    if (!confirm("Delete this expense?")) return;
+    if (id.startsWith("local-")) {
+      pending = pending.filter(p => p.id !== id);
+      saveQueue();
+      render();
+      setStatusLine();
+      return;
+    }
+    if (!endpoint) { toast("Not connected", "bad"); return; }
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "delete", id })
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Server error");
+      expenses = expenses.filter(e => e.id !== id);
+      saveCache();
+      render();
+      toast("Deleted", "good");
+    } catch (err) {
+      console.warn(err);
+      toast("Delete failed", "bad");
+    }
+  }
+
+  // ---------- Render ----------
+  function combinedEntries() {
+    const pendMapped = pending.map(p => ({ ...p, _pending: true }));
+    return [...pendMapped, ...expenses].sort((a, b) => {
+      const ad = (a.date || "") + (a.createdAt || "");
+      const bd = (b.date || "") + (b.createdAt || "");
+      return bd.localeCompare(ad);
+    });
+  }
+
+  function filterByPeriod(items, period) {
+    const now = new Date();
+    const today = startOfDay(now);
+    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startYear = new Date(now.getFullYear(), 0, 1);
+    const startWeek = new Date(today);
+    const dow = (today.getDay() + 6) % 7; // Mon=0
+    startWeek.setDate(today.getDate() - dow);
+
+    return items.filter(it => {
+      const d = startOfDay(new Date(it.date));
+      if (period === "today") return d.getTime() === today.getTime();
+      if (period === "week") return d >= startWeek;
+      if (period === "month") return d >= startMonth;
+      if (period === "year") return d >= startYear;
+      return true;
+    });
+  }
+
+  function populateCategoryFilter(items) {
+    const sel = $("filter-category");
+    const current = sel.value;
+    const cats = Array.from(new Set(items.map(i => i.category))).sort();
+    sel.innerHTML = '<option value="">All categories</option>' + cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+    if (cats.includes(current)) sel.value = current;
+  }
+
+  function render() {
+    const all = combinedEntries();
+    populateCategoryFilter(all);
+
+    // Stats — always over all entries
+    const now = new Date();
+    const today = startOfDay(now).getTime();
+    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const startYear = new Date(now.getFullYear(), 0, 1).getTime();
+    let sToday=0, cToday=0, sMonth=0, cMonth=0, sYear=0, cYear=0, sAll=0;
+    for (const it of all) {
+      const t = startOfDay(new Date(it.date)).getTime();
+      const a = Number(it.amount) || 0;
+      sAll += a;
+      if (t === today) { sToday += a; cToday++; }
+      if (t >= startMonth) { sMonth += a; cMonth++; }
+      if (t >= startYear) { sYear += a; cYear++; }
+    }
+    $("stat-today").textContent = fmtShort(sToday);
+    $("stat-today-count").textContent = `${cToday} ${cToday===1?"entry":"entries"}`;
+    $("stat-month").textContent = fmtShort(sMonth);
+    $("stat-month-count").textContent = `${cMonth} ${cMonth===1?"entry":"entries"}`;
+    $("stat-year").textContent = fmtShort(sYear);
+    $("stat-year-count").textContent = `${cYear} ${cYear===1?"entry":"entries"}`;
+    $("stat-all").textContent = fmtShort(sAll);
+    $("stat-all-count").textContent = `${all.length} ${all.length===1?"entry":"entries"}`;
+
+    // Filtered list
+    const period = $("filter-period").value;
+    const cat = $("filter-category").value;
+    let list = filterByPeriod(all, period);
+    if (cat) list = list.filter(i => i.category === cat);
+
+    const wrap = $("expense-list");
+    if (list.length === 0) {
+      wrap.innerHTML = '<div class="empty">No expenses match.</div>';
+      return;
+    }
+    wrap.innerHTML = list.map(it => {
+      const icon = CATEGORY_ICONS[it.category] || "•";
+      const dateStr = formatDate(it.date);
+      const noteHtml = it.note ? `<div class="note">${escapeHtml(it.note)}</div>` : "";
+      const receiptHtml = it.receiptUrl ? ` <a class="receipt-link" href="${escapeAttr(it.receiptUrl)}" target="_blank">📎 receipt</a>` : "";
+      const pendingPill = it._pending ? `<span class="pending-pill">syncing</span>` : "";
+      return `
+        <div class="expense-item">
+          <div class="cat-icon">${icon}</div>
+          <div class="meta">
+            <div class="top">
+              <div class="cat-name">${escapeHtml(it.category)}${pendingPill}</div>
+              <div class="amt">${fmt(it.amount)}</div>
+            </div>
+            <div class="note">${escapeHtml(it.note || "")}<span class="date" style="margin-left:6px">${dateStr}</span>${receiptHtml}</div>
+          </div>
+          <button class="del" data-id="${escapeAttr(it.id)}" title="Delete">×</button>
+        </div>`;
+    }).join("");
+    wrap.querySelectorAll(".del").forEach(btn => {
+      btn.addEventListener("click", () => deleteExpense(btn.dataset.id));
+    });
+  }
+
+  function formatDate(s) {
+    if (!s) return "";
+    const d = new Date(s);
+    if (isNaN(d)) return s;
+    const today = startOfDay(new Date()).getTime();
+    const target = startOfDay(d).getTime();
+    const diff = Math.round((today - target) / 86400000);
+    if (diff === 0) return "Today";
+    if (diff === 1) return "Yesterday";
+    if (diff > 0 && diff < 7) return diff + "d ago";
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: d.getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+  }
+  function escapeAttr(s) { return escapeHtml(s); }
+
+  // ---------- Filters ----------
+  $("filter-category").addEventListener("change", render);
+  $("filter-period").addEventListener("change", render);
+
+  // ---------- Export ----------
+  $("export-btn").addEventListener("click", () => {
+    const items = combinedEntries();
+    if (items.length === 0) { toast("Nothing to export", "bad"); return; }
+    const headers = ["Date","Category","Amount","Note","Receipt URL","ID"];
+    const rows = items.map(it => [
+      it.date || "",
+      it.category || "",
+      Number(it.amount).toFixed(2),
+      (it.note || "").replace(/"/g, '""'),
+      it.receiptUrl || "",
+      it.id || ""
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0,10);
+    a.href = url; a.download = `expenses-${stamp}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast("CSV downloaded", "good");
+  });
+
+  // ---------- Settings ----------
+  $("endpoint").value = endpoint;
+  $("save-endpoint").addEventListener("click", async () => {
+    const v = $("endpoint").value.trim();
+    if (!v) { toast("Paste your Apps Script URL", "bad"); return; }
+    if (!v.startsWith("https://script.google.com/")) {
+      if (!confirm("That URL doesn't look like a Google Apps Script URL. Use it anyway?")) return;
+    }
+    endpoint = v;
+    localStorage.setItem(LS_ENDPOINT, endpoint);
+    toast("Testing…");
+    await refresh();
+    if (expenses.length >= 0) toast("Connected ✓", "good");
+    syncPending();
+  });
+  $("clear-cache").addEventListener("click", () => {
+    if (!confirm("Clear local cache? Pending entries that haven't synced will be lost.")) return;
+    localStorage.removeItem(LS_CACHE);
+    localStorage.removeItem(LS_QUEUE);
+    pending = [];
+    expenses = [];
+    render();
+    setStatusLine();
+    toast("Cache cleared", "good");
+  });
+
+  $("refresh-btn").addEventListener("click", async () => {
+    await syncPending();
+    await refresh();
+  });
+
+  // ---------- Online listener ----------
+  window.addEventListener("online", () => { syncPending(); });
+
+  // ---------- Init ----------
+  expenses = JSON.parse(localStorage.getItem(LS_CACHE) || "[]");
+  render();
+  setStatusLine();
+  if (endpoint) {
+    refresh().then(() => syncPending());
+  }
+})();
+</script>
+</body>
+</html>
