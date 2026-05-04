@@ -8,6 +8,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>Expenses</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230f172a'/%3E%3Ctext x='50' y='66' font-size='56' text-anchor='middle' fill='%23f8fafc' font-family='system-ui'%3E%C2%A3%3C/text%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230f172a'/%3E%3Ctext x='50' y='66' font-size='56' text-anchor='middle' fill='%23f8fafc' font-family='system-ui'%3E%C2%A3%3C/text%3E%3C/svg%3E" />
+<link rel="manifest" href='data:application/manifest+json,{"name":"Expenses","short_name":"Expenses","start_url":".","scope":".","display":"standalone","background_color":"%230f172a","theme_color":"%230f172a","orientation":"portrait","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27%3E%3Crect width=%27192%27 height=%27192%27 rx=%2742%27 fill=%27%230f172a%27/%3E%3Ctext x=%2796%27 y=%27128%27 font-size=%27110%27 text-anchor=%27middle%27 fill=%27%23f8fafc%27 font-family=%27system-ui%27%3E%C2%A3%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml","purpose":"any"},{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27%3E%3Crect width=%27512%27 height=%27512%27 rx=%27112%27 fill=%27%230f172a%27/%3E%3Ctext x=%27256%27 y=%27340%27 font-size=%27290%27 text-anchor=%27middle%27 fill=%27%23f8fafc%27 font-family=%27system-ui%27%3E%C2%A3%3C/text%3E%3C/svg%3E","sizes":"512x512","type":"image/svg+xml","purpose":"any"}]}' />
+<script>
+  // Minimal service worker — required for Chrome's "Install app" PWA prompt.
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+</script>
 <style>
   :root {
     --bg: #0f172a;
