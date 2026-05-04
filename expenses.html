@@ -361,6 +361,37 @@
   }
   .ghost-btn:hover { background: var(--surface-2); }
 
+  /* Mileage block */
+  .mileage-total {
+    margin-top: 12px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent-2);
+    text-align: center;
+  }
+  .mileage-total.muted { color: var(--muted); font-weight: 500; font-size: 14px; }
+
+  /* Project tag in list */
+  .project-tag {
+    display: inline-block;
+    font-size: 11px;
+    background: var(--surface-2);
+    color: var(--accent-2);
+    padding: 1px 7px;
+    border-radius: 999px;
+    margin-left: 6px;
+    font-weight: 600;
+    vertical-align: middle;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   /* Toast */
   .toast {
     position: fixed;
@@ -436,15 +467,11 @@
     <div class="card">
       <h2>New Expense</h2>
       <form id="expense-form" autocomplete="off">
-        <label for="amount">Amount</label>
-        <div class="amount-input">
-          <input type="number" inputmode="decimal" step="0.01" min="0" id="amount" required placeholder="0.00" />
-        </div>
-
         <label for="category">Category</label>
         <select id="category" required>
           <option value="Food & Drink">🍽️ Food & Drink</option>
           <option value="Transport">🚗 Transport</option>
+          <option value="Mileage">🛣️ Mileage</option>
           <option value="Groceries">🛒 Groceries</option>
           <option value="Bills & Utilities">⚡ Bills & Utilities</option>
           <option value="Shopping">🛍️ Shopping</option>
@@ -452,15 +479,50 @@
           <option value="Travel">✈️ Travel</option>
           <option value="Health">⚕️ Health</option>
           <option value="Business">💼 Business</option>
+          <option value="Research">🔍 Research</option>
           <option value="Other">• Other</option>
         </select>
 
-        <div class="row">
-          <div>
-            <label for="date">Date</label>
-            <input type="date" id="date" required />
+        <!-- Standard amount input (hidden when Mileage selected) -->
+        <div id="amount-block">
+          <label for="amount">Amount</label>
+          <div class="amount-input">
+            <input type="number" inputmode="decimal" step="0.01" min="0" id="amount" placeholder="0.00" />
           </div>
         </div>
+
+        <!-- Mileage block (hidden by default) -->
+        <div id="mileage-block" hidden>
+          <div class="row">
+            <div>
+              <label for="trip-from">From</label>
+              <input type="text" id="trip-from" placeholder="e.g. London W1" maxlength="80" />
+            </div>
+            <div>
+              <label for="trip-to">To</label>
+              <input type="text" id="trip-to" placeholder="e.g. Reading" maxlength="80" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="miles">Miles</label>
+              <input type="number" inputmode="decimal" step="0.1" min="0" id="miles" placeholder="0.0" />
+            </div>
+            <div>
+              <label for="rate">Rate per mile (£)</label>
+              <input type="number" inputmode="decimal" step="0.01" min="0" id="rate" value="0.45" />
+            </div>
+          </div>
+          <div class="mileage-total" id="mileage-total">£0.00 — enter miles to calculate</div>
+          <p class="help">HMRC's approved rate is <b>45p</b> for the first 10,000 business miles per tax year, then <b>25p</b> thereafter. Adjust manually if needed.</p>
+        </div>
+
+        <label for="date">Date</label>
+        <input type="date" id="date" required />
+
+        <label for="project">Project (optional)</label>
+        <input type="text" id="project" placeholder="e.g. Allsopp's competitor visits" maxlength="120" list="project-suggestions" />
+        <datalist id="project-suggestions"></datalist>
 
         <label for="note">Note (optional)</label>
         <input type="text" id="note" placeholder="e.g. Lunch with Jamie" maxlength="200" />
@@ -501,6 +563,11 @@
           <option value="week">This week</option>
           <option value="month" selected>This month</option>
           <option value="year">This year</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <select id="filter-project">
+          <option value="">All projects</option>
         </select>
       </div>
       <div class="expense-list" id="expense-list">
@@ -549,6 +616,7 @@
   const CATEGORY_ICONS = {
     "Food & Drink": "🍽️",
     "Transport": "🚗",
+    "Mileage": "🛣️",
     "Groceries": "🛒",
     "Bills & Utilities": "⚡",
     "Shopping": "🛍️",
@@ -556,6 +624,7 @@
     "Travel": "✈️",
     "Health": "⚕️",
     "Business": "💼",
+    "Research": "🔍",
     "Other": "•"
   };
 
@@ -647,16 +716,66 @@
   // ---------- Form ----------
   $("date").value = todayStr();
 
+  // Toggle mileage / amount panels based on category
+  function isMileage() { return $("category").value === "Mileage"; }
+  function refreshFormMode() {
+    const m = isMileage();
+    $("amount-block").hidden = m;
+    $("mileage-block").hidden = !m;
+    $("amount").required = !m;
+    $("miles").required = m;
+    $("rate").required = m;
+    updateMileageTotal();
+  }
+  function updateMileageTotal() {
+    const miles = parseFloat($("miles").value);
+    const rate = parseFloat($("rate").value);
+    const el = $("mileage-total");
+    if (!miles || miles <= 0 || !rate || rate <= 0) {
+      el.textContent = "Enter miles to calculate";
+      el.classList.add("muted");
+      return;
+    }
+    el.textContent = fmt(miles * rate) + "  ·  " + miles + " mi × " + fmt(rate);
+    el.classList.remove("muted");
+  }
+  $("category").addEventListener("change", refreshFormMode);
+  $("miles").addEventListener("input", updateMileageTotal);
+  $("rate").addEventListener("input", updateMileageTotal);
+  refreshFormMode();
+
   $("expense-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const amount = parseFloat($("amount").value);
-    if (!amount || amount <= 0) { toast("Enter a valid amount", "bad"); return; }
+    let amount, note, miles = null, rate = null, tripFrom = "", tripTo = "";
+    if (isMileage()) {
+      miles = parseFloat($("miles").value);
+      rate = parseFloat($("rate").value);
+      if (!miles || miles <= 0) { toast("Enter the miles travelled", "bad"); return; }
+      if (!rate || rate <= 0) { toast("Enter a valid rate", "bad"); return; }
+      amount = +(miles * rate).toFixed(2);
+      tripFrom = $("trip-from").value.trim();
+      tripTo = $("trip-to").value.trim();
+      const tripDesc = (tripFrom && tripTo) ? `${tripFrom} → ${tripTo}` : (tripFrom || tripTo);
+      const userNote = $("note").value.trim();
+      const summary = `${miles} mi × £${rate.toFixed(2)}`;
+      // Build a friendly note: "Trip · 12 mi × £0.45 · extra note"
+      note = [tripDesc, summary, userNote].filter(Boolean).join(" · ");
+    } else {
+      amount = parseFloat($("amount").value);
+      if (!amount || amount <= 0) { toast("Enter a valid amount", "bad"); return; }
+      note = $("note").value.trim();
+    }
     const entry = {
       id: "local-" + Date.now() + "-" + Math.random().toString(36).slice(2,7),
       amount,
       category: $("category").value,
       date: $("date").value,
-      note: $("note").value.trim(),
+      note,
+      project: $("project").value.trim(),
+      miles,
+      rate,
+      tripFrom,
+      tripTo,
       receiptDataUrl: receiptDataUrl,
       createdAt: new Date().toISOString()
     };
@@ -670,9 +789,15 @@
 
   function resetForm() {
     $("amount").value = "";
+    $("miles").value = "";
+    $("trip-from").value = "";
+    $("trip-to").value = "";
+    // keep rate (likely same for next trip)
     $("note").value = "";
+    // keep project (likely same for several entries in a row)
     $("date").value = todayStr();
     $("receipt-clear").click();
+    updateMileageTotal();
   }
 
   // ---------- Sync ----------
@@ -793,9 +918,22 @@
     if (cats.includes(current)) sel.value = current;
   }
 
+  function populateProjectFilter(items) {
+    const sel = $("filter-project");
+    const current = sel.value;
+    const projects = Array.from(new Set(items.map(i => (i.project || "").trim()).filter(Boolean))).sort();
+    sel.innerHTML = '<option value="">All projects</option>'
+      + '<option value="__none__">— no project —</option>'
+      + projects.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
+    if (current === "__none__" || projects.includes(current)) sel.value = current;
+    // Also populate the datalist on the Add form for autocomplete
+    $("project-suggestions").innerHTML = projects.map(p => `<option value="${escapeAttr(p)}">`).join("");
+  }
+
   function render() {
     const all = combinedEntries();
     populateCategoryFilter(all);
+    populateProjectFilter(all);
 
     // Stats — always over all entries
     const now = new Date();
@@ -823,8 +961,11 @@
     // Filtered list
     const period = $("filter-period").value;
     const cat = $("filter-category").value;
+    const proj = $("filter-project").value;
     let list = filterByPeriod(all, period);
     if (cat) list = list.filter(i => i.category === cat);
+    if (proj === "__none__") list = list.filter(i => !(i.project && i.project.trim()));
+    else if (proj) list = list.filter(i => (i.project || "") === proj);
 
     const wrap = $("expense-list");
     if (list.length === 0) {
@@ -834,15 +975,15 @@
     wrap.innerHTML = list.map(it => {
       const icon = CATEGORY_ICONS[it.category] || "•";
       const dateStr = formatDate(it.date);
-      const noteHtml = it.note ? `<div class="note">${escapeHtml(it.note)}</div>` : "";
       const receiptHtml = it.receiptUrl ? ` <a class="receipt-link" href="${escapeAttr(it.receiptUrl)}" target="_blank">📎 receipt</a>` : "";
       const pendingPill = it._pending ? `<span class="pending-pill">syncing</span>` : "";
+      const projectTag = it.project ? `<span class="project-tag" title="Project">${escapeHtml(it.project)}</span>` : "";
       return `
         <div class="expense-item">
           <div class="cat-icon">${icon}</div>
           <div class="meta">
             <div class="top">
-              <div class="cat-name">${escapeHtml(it.category)}${pendingPill}</div>
+              <div class="cat-name">${escapeHtml(it.category)}${pendingPill}${projectTag}</div>
               <div class="amt">${fmt(it.amount)}</div>
             </div>
             <div class="note">${escapeHtml(it.note || "")}<span class="date" style="margin-left:6px">${dateStr}</span>${receiptHtml}</div>
@@ -876,16 +1017,20 @@
   // ---------- Filters ----------
   $("filter-category").addEventListener("change", render);
   $("filter-period").addEventListener("change", render);
+  $("filter-project").addEventListener("change", render);
 
   // ---------- Export ----------
   $("export-btn").addEventListener("click", () => {
     const items = combinedEntries();
     if (items.length === 0) { toast("Nothing to export", "bad"); return; }
-    const headers = ["Date","Category","Amount","Note","Receipt URL","ID"];
+    const headers = ["Date","Category","Amount","Project","Miles","Rate","Note","Receipt URL","ID"];
     const rows = items.map(it => [
       it.date || "",
       it.category || "",
       Number(it.amount).toFixed(2),
+      it.project || "",
+      it.miles != null && it.miles !== "" ? Number(it.miles).toString() : "",
+      it.rate != null && it.rate !== "" ? Number(it.rate).toFixed(2) : "",
       (it.note || "").replace(/"/g, '""'),
       it.receiptUrl || "",
       it.id || ""
