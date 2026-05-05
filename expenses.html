@@ -788,16 +788,26 @@
   });
 
   function resetForm() {
-    $("amount").value = "";
-    $("miles").value = "";
-    $("trip-from").value = "";
-    $("trip-to").value = "";
+    // Clear fields explicitly. Use setAttribute as well to defeat browser autofill restoration.
+    const clearField = (id) => {
+      const el = $(id);
+      if (!el) return;
+      el.value = "";
+      try { el.setAttribute("value", ""); } catch (e) {}
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    clearField("amount");
+    clearField("miles");
+    clearField("trip-from");
+    clearField("trip-to");
+    clearField("note");
     // keep rate (likely same for next trip)
-    $("note").value = "";
     // keep project (likely same for several entries in a row)
     $("date").value = todayStr();
     $("receipt-clear").click();
     updateMileageTotal();
+    // Refocus category so iOS keyboard dismisses cleanly
+    try { $("category").focus({ preventScroll: true }); $("category").blur(); } catch (e) {}
   }
 
   // ---------- Sync ----------
